@@ -176,10 +176,16 @@ RCT_EXPORT_METHOD(getAlbums: (RCTPromiseResolveBlock)resolve
   
   NSMutableArray<NSDictionary<NSString *, id> *> *result = [NSMutableArray new];
   [albums enumerateObjectsUsingBlock:^(PHAssetCollection * _Nonnull album, NSUInteger index, BOOL * _Nonnull stop) {
-    [result addObject:@{
-                        @"title": [album localizedTitle],
-                        @"assetCount": @([album estimatedAssetCount])
-                        }];
+     if (album) {
+          NSString *albumTitle = [album localizedTitle];
+          NSNumber *count =  @([album estimatedAssetCount]);
+          if (albumTitle && count) {
+              [result addObject:@{
+                  @"title": albumTitle,
+                  @"assetCount": count
+              }];
+          }
+      }
   }];
   
   resolve(
