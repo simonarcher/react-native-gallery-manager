@@ -139,8 +139,9 @@ public class RNGalleryManagerModule extends ReactContextBaseJavaModule {
                 } while (galleryData.moveToNext());
 
                 response.putArray("albums", albums);
-                promise.resolve(response);
             }
+
+            promise.resolve(response);
 
             // Old code before Android 10 Support
 //            gallery = GalleryCursorManager.getAlbumCursor(reactContext);
