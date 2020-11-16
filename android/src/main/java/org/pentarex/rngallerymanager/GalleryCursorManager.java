@@ -72,7 +72,6 @@ public class GalleryCursorManager {
                 MediaStore.Video.VideoColumns.BUCKET_ID,
                 MediaStore.Video.VideoColumns.DATE_MODIFIED,
                 MediaStore.Video.VideoColumns.DATA,
-                "count(_data) as assetCount"
         };
 
         ContentResolver contentResolver = reactContext.getContentResolver();
@@ -80,10 +79,19 @@ public class GalleryCursorManager {
         String BUCKET_GROUP_BY = MediaStore.Files.FileColumns.MEDIA_TYPE + "=" + MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE
                 + " OR "
                 + MediaStore.Files.FileColumns.MEDIA_TYPE + "=" + MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO
-                + " and 1) GROUP BY 1,(2";
+                + " and 1";
 
+        return contentResolver.query(queryUri, projection, BUCKET_GROUP_BY, null, MediaStore.Images.ImageColumns.BUCKET_DISPLAY_NAME + "," + MediaStore.Images.ImageColumns.BUCKET_ID);
 
-        return contentResolver.query(queryUri, projection, BUCKET_GROUP_BY, null, null);
+    }
 
+    public static int getAlbumDataCount(ReactApplicationContext reactContext, final String bucketId)
+    {
+        ContentResolver contentResolver = reactContext.getContentResolver();
+        Uri queryUri = MediaStore.Files.getContentUri("external");
+        final Cursor cursor = contentResolver.query(queryUri,
+                null, MediaStore.Images.ImageColumns.BUCKET_ID + "=?", new String[]{bucketId}, null);
+
+        return ((cursor == null) || (cursor.moveToFirst() == false)) ? 0 : cursor.getCount();
     }
 }

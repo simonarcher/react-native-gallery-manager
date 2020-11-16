@@ -109,26 +109,57 @@ public class RNGalleryManagerModule extends ReactContextBaseJavaModule {
 
         WritableMap response = new WritableNativeMap();
 
+        WritableArray albums = new WritableNativeArray();
 
-        Cursor gallery = null;
+        // Library fork update to support Android 10 requirements
+        // Android 10 removed 'GROUP BY' and 'COUNT' in content queries so we need to do it on ourselves
+        Cursor galleryData = null;
         try {
-            gallery = GalleryCursorManager.getAlbumCursor(reactContext);
-            WritableArray albums = new WritableNativeArray();
-            response.putInt("totalAlbums", gallery.getCount());
-            gallery.moveToFirst();
-            do {
-                WritableMap album = getAlbum(gallery);
-                albums.pushMap(album);
-            } while (gallery.moveToNext());
+            galleryData = GalleryCursorManager.getAlbumCursor(reactContext);
+            HashMap<String, Boolean> albumsKeys = new HashMap<>();
 
-            response.putArray("albums", albums);
+            if (galleryData != null && galleryData.moveToFirst() == true) {
+                final int columnBucketName = galleryData.getColumnIndexOrThrow(MediaStore.Images.ImageColumns.BUCKET_DISPLAY_NAME);
+                final int columnBucketId   = galleryData.getColumnIndexOrThrow(MediaStore.Images.ImageColumns.BUCKET_ID);
 
-            promise.resolve(response);
+                do
+                {
+                    final String bucketId   = galleryData.getString(columnBucketId);
+                    final String bucketName = galleryData.getString(columnBucketName);
+                    if (albumsKeys.containsKey(bucketId) == false) {
+                        final int count = GalleryCursorManager.getAlbumDataCount(reactContext, bucketId);
+                        albumsKeys.put(bucketId, true);
+
+                        WritableMap album = new WritableNativeMap();
+                        album.putString("title", bucketName);
+                        album.putInt("assetCount", count);
+                        albums.pushMap(album);
+                    }
+
+                } while (galleryData.moveToNext());
+
+                response.putArray("albums", albums);
+                promise.resolve(response);
+            }
+
+            // Old code before Android 10 Support
+//            gallery = GalleryCursorManager.getAlbumCursor(reactContext);
+//            WritableArray albums = new WritableNativeArray();
+//            response.putInt("totalAlbums", gallery.getCount());
+//            gallery.moveToFirst();
+//            do {
+//                WritableMap album = getAlbum(gallery);
+//                albums.pushMap(album);
+////                Log.d("Debug ALBUMS", ""+album);
+//            } while (gallery.moveToNext());
+//
+//            response.putArray("albums", albums);
+//            promise.resolve(response);
 
         } catch (SecurityException ex) {
             System.err.println(ex);
         } finally {
-            if (gallery != null) gallery.close();
+            if (galleryData != null) galleryData.close();
         }
 
     }
@@ -168,9 +199,10 @@ public class RNGalleryManagerModule extends ReactContextBaseJavaModule {
     private WritableMap getAlbum(Cursor gallery) {
         WritableMap album = new WritableNativeMap();
         String albumName = gallery.getString(gallery.getColumnIndex(MediaStore.Images.ImageColumns.BUCKET_DISPLAY_NAME));
-        int assetCount = gallery.getInt(gallery.getColumnIndex("assetCount"));
+        // Android 10 support changes
+        // int assetCount = gallery.getInt(gallery.getColumnIndex("assetCount"));
         album.putString("title", albumName);
-        album.putInt("assetCount", assetCount);
+        album.putInt("assetCount", "1");
         return album;
     }
 
